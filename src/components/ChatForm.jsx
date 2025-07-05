@@ -28,7 +28,11 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
 
     inputRef.current.value = "";
 
-    setChatHistory((prev) => [...prev, ...newMessages, { role: "model", text: "Thinking..." }]);
+    setChatHistory((prev) => [
+      ...prev,
+      ...newMessages,
+      { role: "model", text: "Thinking..." },
+    ]);
 
     const latestUserText = newMessages.find((msg) => msg.text)?.text || "";
     const updatedHistory = [
@@ -44,7 +48,7 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
 
   const handleEmojiSelect = (emoji) => {
     inputRef.current.value += emoji.native;
-    setShowEmojiPicker(false); // đóng khung sau khi chọn
+    setShowEmojiPicker(false);
   };
 
   const handleFileChange = (e) => {
@@ -54,30 +58,23 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
   };
 
   return (
-    <form className="chat-form" onSubmit={handleFormSubmit} style={{ position: "relative" }}>
-      <button
-        type="button"
-        className="emoji-toggle"
-        onClick={() => setShowEmojiPicker((prev) => !prev)}
-        style={{
-          background: "none",
-          border: "none",
-          fontSize: "1.5rem",
-          cursor: "pointer",
-          marginRight: "6px",
-        }}
-      >
-        😊
-      </button>
-
+    <form
+      className="chat-form"
+      onSubmit={handleFormSubmit}
+      style={{ position: "relative" }}
+    >
       {showEmojiPicker && (
         <div
           className="emoji-picker"
           style={{
             position: "absolute",
-            bottom: "60px",
-            left: "10px",
+            bottom: "65px",
+            right: "10px",
             zIndex: 100,
+            transform: "scale(0.8)",
+            size: "20px",
+            width: "350px",
+            transformOrigin: "bottom right",
           }}
         >
           <Picker
@@ -90,6 +87,7 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         </div>
       )}
 
+      {/* Hidden file input */}
       <input
         type="file"
         accept="image/*"
@@ -98,6 +96,7 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         onChange={handleFileChange}
       />
 
+      {/* Text input */}
       <input
         type="text"
         placeholder="Message..."
@@ -106,6 +105,25 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         ref={inputRef}
       />
 
+      {/* Emoji toggle button */}
+      <button
+        type="button"
+        className="emoji-toggle"
+        onClick={() => setShowEmojiPicker((prev) => !prev)}
+        style={{
+          display: "flex",
+          background: "none",
+          border: "none",
+          fontSize: "1.4rem",
+          cursor: "pointer",
+          marginLeft: "6px",
+          marginRight: "4px",
+        }}
+      >
+        😊
+      </button>
+
+      {/* Send button */}
       <button className="material-symbols-rounded" type="submit">
         arrow_upward
       </button>

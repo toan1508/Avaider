@@ -6,12 +6,9 @@ import { companyInfo } from "../companyInfo";
 
 const App = () => {
   const [chatHistory, setChatHistory] = useState([
-    {
-      hideInChat: true,
-      role: "model",
-      text: companyInfo,
-    },
+    { hideInChat: true, role: "model", text: companyInfo },
   ]);
+
   const searchWikipedia = async (query) => {
     try {
       const res = await fetch(
@@ -45,6 +42,7 @@ const App = () => {
       ]);
       return;
     }
+
     const updateHistory = (text) => {
       setChatHistory((prev) => [
         ...prev.filter((msg) => msg.text !== "Thinking..."),
@@ -57,17 +55,12 @@ const App = () => {
       parts: [{ text }],
     }));
 
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: formattedHistory }),
-    };
-
     try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL,
-        requestOptions
-      );
+      const response = await fetch(import.meta.env.VITE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: formattedHistory }),
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -99,7 +92,9 @@ const App = () => {
           <div className="message bot-message">
             <AvaiderAIIcon />
             <p className="message-text">
-              Hey there 👋, I am Avaider AI. <br /> How can I help you today?
+              Hey there 👋, I am Avaider AI.
+              <br />
+              How can I help you today?
             </p>
           </div>
 
