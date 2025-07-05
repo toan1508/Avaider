@@ -5,7 +5,6 @@ import Picker from "@emoji-mart/react";
 
 const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
   const inputRef = useRef();
-  const fileRef = useRef();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -71,9 +70,10 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
             bottom: "65px",
             right: "10px",
             zIndex: 100,
-            transform: "scale(0.8)",
+            transform: "scale(0.8.8)",
             size: "20px",
             width: "350px",
+            backgroundColor: "#fff",
             transformOrigin: "bottom right",
           }}
         >
@@ -86,17 +86,6 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
           />
         </div>
       )}
-
-      {/* Hidden file input */}
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileRef}
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
-
-      {/* Text input */}
       <input
         type="text"
         placeholder="Message..."
@@ -104,26 +93,27 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         required={!selectedImage}
         ref={inputRef}
       />
-
-      {/* Emoji toggle button */}
       <button
         type="button"
-        className="emoji-toggle"
         onClick={() => setShowEmojiPicker((prev) => !prev)}
+        title="Chọn emoji"
         style={{
-          display: "flex",
-          background: "none",
+          width: "36px",
+          height: "36px",
+          backgroundColor: "#fff",
+          color: "#fff",
           border: "none",
-          fontSize: "1.4rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.3rem",
+          marginRight: "6px",
           cursor: "pointer",
-          marginLeft: "6px",
-          marginRight: "4px",
         }}
       >
         😊
       </button>
 
-      {/* Send button */}
       <button className="material-symbols-rounded" type="submit">
         arrow_upward
       </button>
