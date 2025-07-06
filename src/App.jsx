@@ -97,7 +97,6 @@ const App = () => {
               How can I help you today?
             </p>
           </div>
-
           {chatHistory
             .filter((chat) => !chat.hideInChat)
             .map((chat, index) => (

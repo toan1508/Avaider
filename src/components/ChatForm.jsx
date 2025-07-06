@@ -39,7 +39,7 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
       ...newMessages.filter((msg) => msg.text),
       {
         role: "user",
-        text: `${companyInfo}\nNow answer this user query: ${latestUserText}`,
+        text: latestUserText,
       },
     ];
     generateBotResponse(updatedHistory);
