@@ -9,6 +9,6 @@ If you have any questions or need assistance, feel free to ask. I'm here to help
     -Email: toanhp1508@gmail.com
     -Microsoft Teams Name: toanhp1508@gmail.com ( Dino BEAN )
 Details:
-    - My name is Ho Phuoc Toan, you can call me Bean Dino. I was born on August 15, 2012, in Vietnam. I am currently a student study coding 
+    - My name is Ho Phuoc Toan. I was born on August 15, 2012, in Vietnam. I am currently a student study coding. I studing at Nguyen Thien Thuat secondary school.
 `;
 export default companyInfo;

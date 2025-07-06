@@ -1,48 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AvaiderAIIcon from "./components/AvaiderAiIcon";
 import ChatForm from "./components/ChatForm";
 import { ChatMessage } from "./components/ChatMessage";
 import { companyInfo } from "../companyInfo";
 
+const colors = [
+  "#ff4c4c", // đỏ
+  "#ff9900", // cam
+  "#fcd800", // vàng
+  "#33cc33", // lục
+  "#3399ff", // lam
+  "#6666cc", // chàm
+  "#cc33cc", // tím
+  "#54575c", // xám (mặc định)
+];
+
 const App = () => {
   const [chatHistory, setChatHistory] = useState([
     { hideInChat: true, role: "model", text: companyInfo },
   ]);
+  const [themeColor, setThemeColor] = useState("#54575c");
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const searchWikipedia = async (query) => {
-    try {
-      const res = await fetch(
-        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
-          query
-        )}`
-      );
-      const data = await res.json();
-      return data.extract || "I couldn’t find anything on Wikipedia.";
-    } catch {
-      return "Failed to fetch from Wikipedia.";
+  useEffect(() => {
+    let light = "",
+      dark = "";
+    switch (themeColor) {
+      case "#ff4c4c":
+        light = "#ffd6d6";
+        dark = "#660000";
+        break;
+      case "#ff9900":
+        light = "#ffe5cc";
+        dark = "#663300";
+        break;
+      case "#fcd800":
+        light = "#fff0a6";
+        dark = "#b58b00";
+        break;
+      case "#33cc33":
+        light = "#ccffcc";
+        dark = "#004d00";
+        break;
+      case "#3399ff":
+        light = "#cce6ff";
+        dark = "#003366";
+        break;
+      case "#6666cc":
+        light = "#dcdcff";
+        dark = "#1a1a66";
+        break;
+      case "#cc33cc":
+        light = "#f0ccff";
+        dark = "#660066";
+        break;
+      case "#54575c":
+      default:
+        light = "#d8dfe4";
+        dark = "#161616";
     }
-  };
+
+    document.body.style.background = `linear-gradient(${light}, ${themeColor}, ${dark})`;
+    document.documentElement.style.setProperty("--theme-color", themeColor);
+  }, [themeColor]);
 
   const generateBotResponse = async (history) => {
     const lastUserMessage = history[history.length - 1].text.toLowerCase();
-    if (
-      lastUserMessage.startsWith("search ") ||
-      lastUserMessage.startsWith("who is ") ||
-      lastUserMessage.startsWith("what is ") ||
-      lastUserMessage.startsWith("tell me about ")
-    ) {
-      const searchQuery = lastUserMessage.replace(
-        /^(search|who is|what is|tell me about)\s+/i,
-        ""
-      );
-      const wikiResult = await searchWikipedia(searchQuery);
-      setChatHistory((prev) => [
-        ...prev.filter((msg) => msg.text !== "Thinking..."),
-        { role: "model", text: wikiResult },
-      ]);
-      return;
-    }
-
     const updateHistory = (text) => {
       setChatHistory((prev) => [
         ...prev.filter((msg) => msg.text !== "Thinking..."),
@@ -62,15 +85,9 @@ const App = () => {
         body: JSON.stringify({ contents: formattedHistory }),
       });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Something went wrong!");
-      }
-
       const responseText = data.candidates[0].content.parts[0].text
         .replace(/\*\*(.*?)\*\*/g, "$1")
         .trim();
-
       updateHistory(responseText);
     } catch (error) {
       updateHistory("Oops! Something went wrong.");
@@ -80,8 +97,44 @@ const App = () => {
 
   return (
     <div className="container">
+      <div className="color-button-wrapper">
+        <button
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className="color-toggle-button"
+          title="Đổi màu giao diện"
+          style={{
+            background: "none",
+          }}
+        >
+          🎨
+        </button>
+
+        <div className={`color-picker ${showColorPicker ? "show" : ""}`}>
+          {colors.map((c, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setThemeColor(c);
+                setShowColorPicker(false);
+              }}
+              style={{
+                background: c,
+                width: 26,
+                height: 26,
+                boxShadow: "0 0 6px rgba(0,0,0,0.8)",
+                borderRadius: "50%",
+                border: c === themeColor ? "3px solid white" : "2px solid #999",
+                cursor: "pointer",
+              }}
+            />
+          ))}
+        </div>
+      </div>
       <div className="chatbot-popup">
-        <div className="chat-header">
+        <div
+          className="chat-header"
+          style={{ backgroundColor: "var(--theme-color)" }}
+        >
           <div className="header-info">
             <AvaiderAIIcon />
             <h2 className="logo-text">Avaider Ai</h2>
@@ -92,11 +145,11 @@ const App = () => {
           <div className="message bot-message">
             <AvaiderAIIcon />
             <p className="message-text">
-              Hey there 👋, I am Avaider AI.
-              <br />
+              Hey there 👋, I am Avaider AI. <br />
               How can I help you today?
             </p>
           </div>
+
           {chatHistory
             .filter((chat) => !chat.hideInChat)
             .map((chat, index) => (
