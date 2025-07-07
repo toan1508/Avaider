@@ -12,7 +12,7 @@ You can contact him for more information.
 Details:
     - My name is Ho Phuoc Toan. I was born on August 15, 2012, in Vietnam. I am currently a student study coding. I studing at Nguyen Thien Thuat secondary school.
     - My mother is Nguyen Thi Dieu Linh, and she is an IT engineer.
-    - My father is Ho Phuoc Tu, and he is also an IT engineer.
+    - My father is Hồ Phước Tú, and he is also an IT engineer.
     - My younger brother is Ho Phuoc Tien (Tiến), and he is also a student
 
 `;
