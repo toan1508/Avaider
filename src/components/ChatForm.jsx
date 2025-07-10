@@ -13,20 +13,18 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
       const items = e.clipboardData.items;
       const newImages = [];
       for (const item of items) {
-        if (item.type.startsWith("image")) {
+        if (item.type.indexOf("image") !== -1) {
           const file = item.getAsFile();
           newImages.push(file);
         }
       }
-      if (newImages.length > 0) {
+      if (newImages.length)
         setSelectedImages((prev) => [...prev, ...newImages]);
-      }
     };
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, []);
 
-  // Gửi form
   const handleFormSubmit = (e) => {
     e.preventDefault();
     const userMessage = inputRef.current.value.trim();
@@ -42,17 +40,24 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
       const imageMessages = selectedImages.map((img) => ({
         role: "user",
         image: URL.createObjectURL(img),
-        imageFile: img,
+        imageFile: img, // để AI phân tích
       }));
       newMessages.push(...imageMessages);
     }
 
     inputRef.current.value = "";
-    setSelectedImages([]); // Xóa ảnh sau khi gửi
+    setSelectedImages([]);
 
-    const updatedHistory = [...chatHistory, ...newMessages];
+    setChatHistory((prev) => [
+      ...prev,
+      ...newMessages,
+      { role: "model", text: "Thinking..." },
+    ]);
 
-    setChatHistory([...updatedHistory, { role: "model", text: "Thinking..." }]);
+    const updatedHistory = [
+      ...chatHistory,
+      ...newMessages, // giữ lại imageFile
+    ];
 
     generateBotResponse(updatedHistory);
   };
@@ -61,40 +66,29 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
     const prompt = inputRef.current.value.trim();
     if (!prompt) return;
 
-    inputRef.current.value = "";
-
     setChatHistory((prev) => [
       ...prev,
       { role: "user", text: prompt },
       { role: "model", text: "Đang tạo ảnh..." },
     ]);
+    inputRef.current.value = "";
 
     try {
-      const response = await fetch(
-        "https://api-inference.huggingface.co/models/prompthero/openjourney",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_HUGGINGFACE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ inputs: prompt }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Lỗi từ Hugging Face API");
-      }
-
-      const blob = await response.blob();
-      const imageUrl = URL.createObjectURL(blob);
+      const res = await fetch(import.meta.env.VITE_IMAGE_GEN_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      const imageUrl = data.url || data.image_url;
 
       setChatHistory((prev) => [
         ...prev.filter((msg) => msg.text !== "Đang tạo ảnh..."),
-        { role: "model", image: imageUrl },
+        imageUrl
+          ? { role: "model", image: imageUrl }
+          : { role: "model", text: "❌ Không thể tạo ảnh." },
       ]);
-    } catch (error) {
-      console.error("Lỗi tạo ảnh:", error);
+    } catch {
       setChatHistory((prev) => [
         ...prev.filter((msg) => msg.text !== "Đang tạo ảnh..."),
         { role: "model", text: "❌ Không thể tạo ảnh." },
@@ -110,7 +104,6 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setSelectedImages((prev) => [...prev, ...files]);
-    e.target.value = ""; // Cho phép chọn cùng file lại lần nữa
   };
 
   const removeImage = (index) => {
@@ -199,15 +192,15 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
           type="file"
           accept="image/*"
           multiple
-          id="image-upload"
           style={{ display: "none" }}
+          id="image-upload"
           onChange={handleFileChange}
         />
 
         <input
           type="text"
-          className="message-input"
           placeholder="Message..."
+          className="message-input"
           required={selectedImages.length === 0}
           ref={inputRef}
         />
@@ -215,6 +208,7 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         <label htmlFor="image-upload" title="Tải ảnh lên" style={iconStyle}>
           📁
         </label>
+
         <button
           type="button"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
@@ -233,7 +227,8 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
             boxShadow: "0 0 9px rgba(0, 0, 0, 0.95)",
           }}
         >
-          arrow_upward
+          {" "}
+          arrow_upward{" "}
         </button>
       </form>
     </>
