@@ -120,7 +120,7 @@ body {
 }
 
 .chat-body .bot-message .message-text {
-  background: #f6f6f6;
+  background: #fff;
   border-radius: 3px 13px 13px 13px;
 }
 
@@ -249,4 +249,22 @@ body {
     max-width: 95vw;
     border-radius: 12px;
   }
+}
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.image-modal img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #fff;
 }

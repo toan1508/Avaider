@@ -5,14 +5,14 @@ import { ChatMessage } from "./components/ChatMessage";
 import { companyInfo } from "../companyInfo";
 
 const colors = [
-  "#ff4c4c", // đỏ
-  "#ff9900", // cam
-  "#fcd800", // vàng
-  "#33cc33", // lục
-  "#3399ff", // lam
-  "#6666cc", // chàm
-  "#cc33cc", // tím
-  "#54575c", // xám (mặc định)
+  "#ff4c4c",
+  "#ff9900",
+  "#fcd800",
+  "#33cc33",
+  "#3399ff",
+  "#6666cc",
+  "#cc33cc",
+  "#54575c",
 ];
 
 const App = () => {
@@ -21,6 +21,7 @@ const App = () => {
   ]);
   const [themeColor, setThemeColor] = useState("#54575c");
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
 
   useEffect(() => {
     let light = "",
@@ -54,61 +55,134 @@ const App = () => {
         light = "#f0ccff";
         dark = "#660066";
         break;
-      case "#54575c":
       default:
         light = "#d8dfe4";
         dark = "#161616";
     }
-
     document.body.style.background = `linear-gradient(${light}, ${themeColor}, ${dark})`;
     document.documentElement.style.setProperty("--theme-color", themeColor);
   }, [themeColor]);
 
+  const detectLanguage = (text) =>
+    /[ăâêôơưđàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ]/i.test(text) ? "vi" : "en";
+
   const generateBotResponse = async (history) => {
-    const lastUserMessage = history[history.length - 1].text.toLowerCase();
-    const updateHistory = (text) => {
+    const last = history.at(-1);
+    const lastText = last?.text?.trim();
+    const lastImage = last?.image;
+    const lastImageFile = last?.imageFile;
+
+    const updateHistory = (message) => {
       setChatHistory((prev) => [
-        ...prev.filter((msg) => msg.text !== "Thinking..."),
-        { role: "model", text },
+        ...prev.filter(
+          (m) =>
+            ![
+              "Thinking...",
+              "Đang tạo ảnh...",
+              "🧠 Đang phân tích ảnh...",
+            ].includes(m.text)
+        ),
+        message,
       ]);
     };
 
-    const formattedHistory = history.map(({ role, text }) => ({
-      role,
-      parts: [{ text }],
-    }));
+    if (lastImage && lastImageFile) {
+      updateHistory({ role: "model", text: "🧠 Đang phân tích ảnh..." });
+      try {
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(lastImageFile);
+        });
+
+        const res = await fetch(import.meta.env.VITE_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: "Describe this image" },
+                  {
+                    inlineData: { mimeType: lastImageFile.type, data: base64 },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        updateHistory({
+          role: "model",
+          text: text || "🤖 Không thể phân tích ảnh.",
+        });
+      } catch {
+        updateHistory({ role: "model", text: "❌ Lỗi khi xử lý ảnh." });
+      }
+      return;
+    }
+
+    if (/^(vẽ|draw|tạo ảnh|make)/i.test(lastText)) {
+      updateHistory({ role: "model", text: "Đang tạo ảnh..." });
+      try {
+        const res = await fetch(import.meta.env.VITE_IMAGE_GEN_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: lastText }),
+        });
+        const data = await res.json();
+        const url = data.url || data.image_url;
+        if (url) updateHistory({ role: "model", image: url });
+        else updateHistory({ role: "model", text: "❌ Không thể tạo ảnh." });
+      } catch {
+        updateHistory({ role: "model", text: "❌ Không thể tạo ảnh." });
+      }
+      return;
+    }
+
+    updateHistory({ role: "model", text: "Thinking..." });
+    const lang = detectLanguage(lastText);
+    const prompt =
+      (lang === "vi" ? "Trả lời bằng tiếng Việt: " : "Reply in English: ") +
+      lastText;
+
+    const formatted = history
+      .map((m) => m.text && { role: m.role, parts: [{ text: m.text }] })
+      .filter(Boolean);
 
     try {
-      const response = await fetch(import.meta.env.VITE_API_URL, {
+      const res = await fetch(import.meta.env.VITE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: formattedHistory }),
+        body: JSON.stringify({
+          contents: [...formatted, { role: "user", parts: [{ text: prompt }] }],
+        }),
       });
-      const data = await response.json();
-      const responseText = data.candidates[0].content.parts[0].text
-        .replace(/\*\*(.*?)\*\*/g, "$1")
-        .trim();
-      updateHistory(responseText);
-    } catch (error) {
-      updateHistory("Oops! Something went wrong.");
-      console.error(error);
+      const data = await res.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      updateHistory({ role: "model", text: reply || "❌ Không có phản hồi." });
+    } catch {
+      updateHistory({ role: "model", text: "❌ Lỗi kết nối hoặc API." });
     }
   };
 
   return (
     <div className="container">
+      {modalImage && (
+        <div className="image-modal" onClick={() => setModalImage(null)}>
+          <img src={modalImage} alt="zoom" />
+        </div>
+      )}
+
       <div className="color-button-wrapper">
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
           className="color-toggle-button"
-          title="Đổi màu giao diện"
-          style={{
-            background: "none",
-          }}
         >
           🎨
         </button>
-
         <div className={`color-picker ${showColorPicker ? "show" : ""}`}>
           {colors.map((c, i) => (
             <button
@@ -121,15 +195,15 @@ const App = () => {
                 background: c,
                 width: 26,
                 height: 26,
-                boxShadow: "0 0 6px rgba(0,0,0,0.8)",
                 borderRadius: "50%",
+                boxShadow: "0 0 10px rgba(0, 0, 0, 0.95)",
                 border: c === themeColor ? "3px solid white" : "2px solid #999",
-                cursor: "pointer",
               }}
             />
           ))}
         </div>
       </div>
+
       <div className="chatbot-popup">
         <div
           className="chat-header"
@@ -137,7 +211,7 @@ const App = () => {
         >
           <div className="header-info">
             <AvaiderAIIcon />
-            <h2 className="logo-text">Avaider Ai</h2>
+            <h2 className="logo-text">Avaider AI</h2>
           </div>
         </div>
 
@@ -145,15 +219,15 @@ const App = () => {
           <div className="message bot-message">
             <AvaiderAIIcon />
             <p className="message-text">
-              Hey there 👋, I am Avaider AI. <br />
+              Hey there 👋, I am Avaider AI.
+              <br />
               How can I help you today?
             </p>
           </div>
-
           {chatHistory
-            .filter((chat) => !chat.hideInChat)
-            .map((chat, index) => (
-              <ChatMessage key={index} chat={chat} />
+            .filter((m) => !m.hideInChat)
+            .map((msg, i) => (
+              <ChatMessage key={i} chat={msg} setModalImage={setModalImage} />
             ))}
         </div>
 
