@@ -215,9 +215,6 @@ const ChatForm = ({ chatHistory, setChatHistory, generateBotResponse }) => {
         <label htmlFor="image-upload" title="Tải ảnh lên" style={iconStyle}>
           📁
         </label>
-
-        
-
         <button
           type="button"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
